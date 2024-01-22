@@ -1,1 +1,5 @@
 opencv-python
+numpy
+scikit-image
+Flask
+flask_restful

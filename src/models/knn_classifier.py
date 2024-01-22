@@ -7,19 +7,51 @@ from skimage.filters import threshold_yen, threshold_mean, threshold_triangle
 from skimage.measure import label, regionprops
 
 class KNNClassifier:
+
     main_logger = logging.Logger("KNNClassifier")
+
     root_folder_path = Path(__file__).parent.parent
-
+    root_folder_path = os.path.join(root_folder_path, "..")
+        
     def __init__(self):
-        self.train_labels = None
-        self.train_images = None
-        self.categories = None
-
+        
         # Preprocess parameters
         self.kernel_size = 5
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
-    
+        elements = ["tuercas", "tornillos", "arandelas", "clavos"]
+        train_data, train_labels = self.load_images(elements)
+        self.fit(train_data, train_labels, elements)
+
+
+    def load_images(self, elements):
+        # load images
+        train_data = []
+        train_labels = []
+
+        images_path = f"{KNNClassifier.root_folder_path}/images/Fotos"
+
+        for element in elements:
+
+            for img in os.listdir(f"{images_path}/{element}"):
+                img_new = cv2.imread(
+                    f"{images_path}/{element}/{img}",
+                    cv2.IMREAD_GRAYSCALE
+                )
+                if img_new is not None:
+                    img_resized = cv2.resize(img_new, (500, 500))
+                    train_data.append(np.array(img_resized).flatten())
+                    train_labels.append(elements.index(element))
+
+                else:
+                    print(f"Error: It is not possible to read the iamge {element}/{img}")
+
+        # convert to numpy array
+        train_data = np.array(train_data)
+        train_labels = np.array(train_labels)
+
+        return train_data, train_labels
+
     def __preprocess(self, images):
 
         # Preprocess train images
