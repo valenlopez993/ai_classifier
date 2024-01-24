@@ -45,7 +45,7 @@ class KNNClassifier:
                     train_labels.append(elements.index(element))
 
                 else:
-                    print(f"Error: It is not possible to read the iamge {element}/{img}")
+                    print(f"Error: It is not possible to read the image {element}/{img}")
 
         # convert to numpy array
         train_data = np.array(train_data)
@@ -108,10 +108,8 @@ class KNNClassifier:
             raise TypeError("train_images and train_labels must be numpy arrays")
         if (train_images.shape[0] != train_labels.shape[0]):
             raise Exception("Shape mistmatch: train_images and train_labels must have the same number of elements")
-        # if train_images.ndim != 2:
-        #     raise Exception("train_images must have 2 dimensions")
-        # if train_labels.ndim != 1:
-        #     raise Exception("train_labels must have 1 dimension")
+        if train_labels.ndim != 1:
+            raise Exception("train_labels must have 1 dimension")
 
         self.train_images, _, _, _ = self.__preprocess(train_images)
         self.train_labels = train_labels
@@ -125,8 +123,6 @@ class KNNClassifier:
         imgs,
         k : int = 3
     ):
-        # if (not isinstance(imgs, np.ndarray)):
-        #     raise TypeError("img must be a numpy array")
 
         imgs_vec, image_thresh, image_close, label_image = self.__preprocess(imgs)
         
