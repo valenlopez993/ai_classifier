@@ -40,7 +40,8 @@ class KNNClassifier:
                 )
                 if img_new is not None:
                     img_resized = cv2.resize(img_new, (500, 500))
-                    train_data.append(np.array(img_resized).flatten())
+                    # train_data.append(np.array(img_resized).flatten())
+                    train_data.append(np.array(img_resized))
                     train_labels.append(elements.index(element))
 
                 else:
@@ -61,15 +62,15 @@ class KNNClassifier:
             thresh = threshold_triangle(img)
             #image = np.bitwise_not(gray > yen)
             image = img > thresh
-            image = image.astype(np.uint8) * 255
+            image_thresh = image.astype(np.uint8) * 255
 
             # Opening
             #image = cv2.dilate(cv2.erode(image, kernel, iterations=1), kernel, iterations=1)
             # Closing
-            image = cv2.erode(cv2.dilate(image, self.kernel, iterations=1), self.kernel, iterations=1)
+            image_close = cv2.erode(cv2.dilate(image_thresh, self.kernel, iterations=1), self.kernel, iterations=1)
 
             # Labeling (identify objects)
-            label_image = label(image)
+            label_image = label(image_close)
             # Get properties of objects
             regions = regionprops(label_image)
 
@@ -77,10 +78,14 @@ class KNNClassifier:
             area = 0
             for props in regions:
                 if props.area > area:
+                    main_label = props.label
                     area = props.area
                     perimeter = props.perimeter
                     eccentricity = props.eccentricity 
                     moments_hu = props.moments_hu
+
+            # Remove the biggest object from the image
+            label_image[label_image != main_label] = 0
 
             new_row = np.array([
                 area, 
@@ -91,7 +96,7 @@ class KNNClassifier:
 
             img_vec = np.append(img_vec, [new_row], axis=0)
 
-        return img_vec[1:]
+        return img_vec[1:], image_thresh, image_close, label_image
 
     def fit(
         self, 
@@ -103,12 +108,12 @@ class KNNClassifier:
             raise TypeError("train_images and train_labels must be numpy arrays")
         if (train_images.shape[0] != train_labels.shape[0]):
             raise Exception("Shape mistmatch: train_images and train_labels must have the same number of elements")
-        if train_images.ndim != 2:
-            raise Exception("train_images must have 2 dimensions")
-        if train_labels.ndim != 1:
-            raise Exception("train_labels must have 1 dimension")
+        # if train_images.ndim != 2:
+        #     raise Exception("train_images must have 2 dimensions")
+        # if train_labels.ndim != 1:
+        #     raise Exception("train_labels must have 1 dimension")
 
-        self.train_images = self.__preprocess(train_images)
+        self.train_images, _, _, _ = self.__preprocess(train_images)
         self.train_labels = train_labels
         self.categories = clusters_tags
 
@@ -123,12 +128,12 @@ class KNNClassifier:
         # if (not isinstance(imgs, np.ndarray)):
         #     raise TypeError("img must be a numpy array")
 
-        imgs = self.__preprocess(imgs)
+        imgs_vec, image_thresh, image_close, label_image = self.__preprocess(imgs)
         
         predictions = []
-        for img in imgs:
+        for img_vec in imgs_vec:
             distances = [
-                self.__euclidean_distance(img, train_img)
+                self.__euclidean_distance(img_vec, train_img)
                 for train_img in self.train_images
             ]
 
@@ -138,4 +143,4 @@ class KNNClassifier:
             most_common = np.bincount(neighbors).argmax()
             predictions.append(self.categories[most_common])
         
-        return predictions
+        return predictions, image_thresh, image_close, label_image
