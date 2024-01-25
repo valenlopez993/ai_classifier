@@ -19,16 +19,21 @@ class KNNClassifierRoute(Resource):
 
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
-
+            
+            # img_crop_size = 500
+            # y_size, x_size = image.shape
+            # image = image[round(y_size/2)-img_crop_size : round(y_size/2)+img_crop_size, round(x_size/2)-img_crop_size : round(x_size/2)+img_crop_size]
             image = cv2.resize(image, (500, 500))
 
-            category, image_thresh, image_close, label_image = KNNClassifierRoute.knn_classifier.predict([image], k=6)
+            category, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=6)
 
-            zip_name = f"{category}.zip"
+            # Delete the label image because cannot be serialized
+            del images_dict["label_image"]
+
+            # Add the grayscale image to the dictionary
             images_dict = {
                 "grayscale": image,
-                "thresh": image_thresh,
-                "close": image_close
+                **images_dict
             }
 
            # Save in memory the category
@@ -60,7 +65,7 @@ class KNNClassifierRoute(Resource):
             zip_buffer.seek(0)
 
             # Return the ZIP file as a response
-            return send_file(zip_buffer, download_name=zip_name, as_attachment=True)
+            return send_file(zip_buffer, download_name="images.zip", as_attachment=True)
         
         except Exception as e:
             print(e)

@@ -1,17 +1,11 @@
-import os
-import cv2
 import numpy as np
-from pathlib import Path
 import logging
-from skimage.filters import threshold_yen, threshold_mean, threshold_triangle
-from skimage.measure import label, regionprops
 
-class KNNClassifier:
+from models.ai_classifier import AIClassifier
+
+class KNNClassifier(AIClassifier):
 
     main_logger = logging.Logger("KNNClassifier")
-
-    root_folder_path = Path(__file__).parent.parent
-    root_folder_path = os.path.join(root_folder_path, "..")
         
     def __init__(self):
         
@@ -22,81 +16,6 @@ class KNNClassifier:
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         train_data, train_labels = self.load_images(elements)
         self.fit(train_data, train_labels, elements)
-
-
-    def load_images(self, elements):
-        # load images
-        train_data = []
-        train_labels = []
-
-        images_path = f"{KNNClassifier.root_folder_path}/images/Fotos"
-
-        for element in elements:
-
-            for img in os.listdir(f"{images_path}/{element}"):
-                img_new = cv2.imread(
-                    f"{images_path}/{element}/{img}",
-                    cv2.IMREAD_GRAYSCALE
-                )
-                if img_new is not None:
-                    img_resized = cv2.resize(img_new, (500, 500))
-                    # train_data.append(np.array(img_resized).flatten())
-                    train_data.append(np.array(img_resized))
-                    train_labels.append(elements.index(element))
-
-                else:
-                    print(f"Error: It is not possible to read the image {element}/{img}")
-
-        # convert to numpy array
-        train_data = np.array(train_data)
-        train_labels = np.array(train_labels)
-
-        return train_data, train_labels
-
-    def __preprocess(self, images):
-
-        # Preprocess train images
-        img_vec = np.empty([1, 10])
-        for img in images:
-            # apply threshold to a gray image
-            thresh = threshold_triangle(img)
-            #image = np.bitwise_not(gray > yen)
-            image = img > thresh
-            image_thresh = image.astype(np.uint8) * 255
-
-            # Opening
-            #image = cv2.dilate(cv2.erode(image, kernel, iterations=1), kernel, iterations=1)
-            # Closing
-            image_close = cv2.erode(cv2.dilate(image_thresh, self.kernel, iterations=1), self.kernel, iterations=1)
-
-            # Labeling (identify objects)
-            label_image = label(image_close)
-            # Get properties of objects
-            regions = regionprops(label_image)
-
-            # Get the biggest object and its properties
-            area = 0
-            for props in regions:
-                if props.area > area:
-                    main_label = props.label
-                    area = props.area
-                    perimeter = props.perimeter
-                    eccentricity = props.eccentricity 
-                    moments_hu = props.moments_hu
-
-            # Remove the biggest object from the image
-            label_image[label_image != main_label] = 0
-
-            new_row = np.array([
-                area, 
-                perimeter, 
-                eccentricity, 
-                *moments_hu
-            ])
-
-            img_vec = np.append(img_vec, [new_row], axis=0)
-
-        return img_vec[1:], image_thresh, image_close, label_image
 
     def fit(
         self, 
@@ -111,12 +30,9 @@ class KNNClassifier:
         if train_labels.ndim != 1:
             raise Exception("train_labels must have 1 dimension")
 
-        self.train_images, _, _, _ = self.__preprocess(train_images)
+        self.train_images, _, _, _, _, _ = self.preprocess(train_images)
         self.train_labels = train_labels
         self.categories = clusters_tags
-
-    def __euclidean_distance(self, img, train_img):
-        return np.sqrt(np.sum((img - train_img)**2))
 
     def predict(
         self, 
@@ -124,12 +40,12 @@ class KNNClassifier:
         k : int = 3
     ):
 
-        imgs_vec, image_thresh, image_close, label_image = self.__preprocess(imgs)
+        imgs_vec, endpoints, image_thresh, image_close, image_open, label_image = self.preprocess(imgs)
         
         predictions = []
         for img_vec in imgs_vec:
             distances = [
-                self.__euclidean_distance(img_vec, train_img)
+                self.euclidean_distance(img_vec, train_img)
                 for train_img in self.train_images
             ]
 
@@ -139,4 +55,13 @@ class KNNClassifier:
             most_common = np.bincount(neighbors).argmax()
             predictions.append(self.categories[most_common])
         
-        return predictions, image_thresh, image_close, label_image
+        return (
+            img_vec, 
+            endpoints, 
+            predictions, 
+            {
+                "threshold": image_thresh,
+                "closing": image_close,
+                "opening": image_open,
+                "label_image": label_image
+            })
