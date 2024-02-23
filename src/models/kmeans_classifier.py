@@ -3,9 +3,9 @@ import logging
 
 from models.ai_classifier import AIClassifier
 
-class KNNClassifier(AIClassifier):
+class KMeansClassifier(AIClassifier):
 
-    main_logger = logging.Logger("KNNClassifier")
+    main_logger = logging.Logger("KMeansClassifier")
         
     def __init__(self):
         
@@ -14,6 +14,7 @@ class KNNClassifier(AIClassifier):
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
+        self.k = len(elements)
         train_data, train_labels = self.load_images(elements)
         self.fit(train_data, train_labels, elements)
 
@@ -30,17 +31,25 @@ class KNNClassifier(AIClassifier):
         if train_labels.ndim != 1:
             raise Exception("train_labels must have 1 dimension")
 
-        self.train_images, _, _, _, _, _, _ = self.preprocess(train_images)
+        self.train_images, _, _, _, _, _ = self.preprocess(train_images)
         self.train_labels = train_labels
         self.categories = clusters_tags
 
     def predict(
         self, 
-        imgs,
-        k : int = 3
+        imgs
     ):
 
-        imgs_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.preprocess(imgs)
+        imgs_vec, endpoints, image_thresh, image_close, image_open, label_image = self.preprocess(imgs)
+
+        initial_centroids = np.random.rand(self.k, img_vec.shape[1])
+
+        initial_centroids[1][0] *= 1500
+        initial_centroids[1][1] *= 1500
+        initial_centroids[2][0] *= 1500
+        initial_centroids[2][1] *= 1500
+        initial_centroids[3][0] *= 1500
+        initial_centroids[3][1] *= 1500
         
         predictions = []
         for img_vec in imgs_vec:
@@ -60,9 +69,8 @@ class KNNClassifier(AIClassifier):
             endpoints, 
             predictions, 
             {
-                "Filtro Mediana": gamma_corrected,	
-                "Binarizada": image_bw,
-                "Cierre": image_close,
-                "Apertura": image_open,
+                "threshold": image_thresh,
+                "closing": image_close,
+                "opening": image_open,
                 "label_image": label_image
             })
