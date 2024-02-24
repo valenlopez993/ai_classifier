@@ -29,7 +29,7 @@ class AIClassifier(ABC):
         train_data = []
         train_labels = []
 
-        images_path = f"{AIClassifier.root_folder_path}/images"
+        images_path = os.path.join(AIClassifier.root_folder_path, "images")
 
         for element in elements:
 
