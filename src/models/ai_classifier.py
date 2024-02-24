@@ -3,7 +3,9 @@ import os
 import cv2
 import numpy as np
 from pathlib import Path
-from skimage.filters import threshold_yen, threshold_mean, threshold_triangle
+from skimage.morphology import disk
+from skimage import exposure
+from skimage.filters import threshold_yen, threshold_mean, threshold_triangle, rank
 from skimage.measure import label, regionprops
 
 class AIClassifier(ABC):
@@ -27,7 +29,7 @@ class AIClassifier(ABC):
         train_data = []
         train_labels = []
 
-        images_path = f"{AIClassifier.root_folder_path}/images/Fotos"
+        images_path = f"{AIClassifier.root_folder_path}/images"
 
         for element in elements:
 
@@ -55,14 +57,17 @@ class AIClassifier(ABC):
         # Preprocess train images
         img_vec = np.empty([1, 10])
         for img in images:
-            # apply threshold to a gray image
+            
+            # Apply filter
+            gamma_corrected = exposure.adjust_sigmoid(img)
+
+            # Binarize image
             thresh = threshold_triangle(img)
-            #image = np.bitwise_not(gray > yen)
             image = img > thresh
-            image_thresh = image.astype(np.uint8) * 255
+            image_bw = image.astype(np.uint8) * 255
 
             # Closing
-            image_close = cv2.erode(cv2.dilate(image_thresh, self.kernel, iterations=1), self.kernel, iterations=1)
+            image_close = cv2.erode(cv2.dilate(image_bw, self.kernel, iterations=1), self.kernel, iterations=1)
             # Opening
             image_open = cv2.dilate(cv2.erode(image_close, self.kernel, iterations=1), self.kernel, iterations=1)
 
@@ -94,4 +99,4 @@ class AIClassifier(ABC):
 
             img_vec = np.append(img_vec, [new_row], axis=0)
 
-        return img_vec[1:], endpoints, image_thresh, image_close, image_open, label_image
+        return img_vec[1:], endpoints, gamma_corrected, image_bw, image_close, image_open, label_image
