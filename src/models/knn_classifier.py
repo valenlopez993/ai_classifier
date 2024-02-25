@@ -16,6 +16,9 @@ class KNNClassifier(AIClassifier):
         self.kernel_size = 5
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
+        # Relation cm/px
+        self.relation_cm_px = 0.0264583333
+
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         self.train_data, train_labels = self.load_images(elements)
         self.fit(self.train_data, train_labels, elements)
@@ -58,11 +61,20 @@ class KNNClassifier(AIClassifier):
 
             most_common = np.bincount(neighbors).argmax()
             predictions.append(self.categories[most_common])
-        
+
+            # Calculate the length of the object if it is a "clavo" or a "tornillo"
+            objects_length = [
+                np.sqrt((endpoints[2] - endpoints[0])**2 + (endpoints[3] - endpoints[1])**2)  * self.relation_cm_px
+                if prediction in ["clavos", "tornillos"] 
+                else None
+                for prediction in predictions
+            ]
+            
         return (
             img_vec, 
             endpoints, 
             predictions, 
+            objects_length,
             {
                 "Filtro Mediana": gamma_corrected,	
                 "Binarizada": image_bw,

@@ -16,6 +16,9 @@ class KMeansClassifier(AIClassifier):
         self.kernel_size = 5
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
+        # Relation cm/px
+        self.relation_cm_px = 0.0264583333
+
         # K-means parameters
         self.k_means_iterations = 5
 
@@ -91,12 +94,19 @@ class KMeansClassifier(AIClassifier):
 
                 # Get the closest centroid to the image to predict that is in the 0th position
                 prediction = self.categories[closest_centroids[0]]
+                # Calculate the length of the object if it is a "clavo" or a "tornillo"
+                object_length = (
+                    np.sqrt((endpoints[2] - endpoints[0])**2 + (endpoints[3] - endpoints[1])**2) * self.relation_cm_px
+                    if prediction in ["clavos", "tornillos"] 
+                    else None
+                )
 
         return (
             img_vec, 
             endpoints, 
             final_centroids,
-            prediction, 
+            prediction,
+            object_length, 
             {
                 "Filtro Mediana": gamma_corrected,	
                 "Binarizada": image_bw,

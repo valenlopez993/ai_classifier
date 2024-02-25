@@ -19,7 +19,7 @@ class KMeansClassifierRoute(Resource):
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
 
-            img_vec, endpoints, centroids, category, images_dict = KMeansClassifierRoute.kmeans_classifier.predict([image])
+            img_vec, endpoints, centroids, object_length, category, images_dict = KMeansClassifierRoute.kmeans_classifier.predict([image])
 
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
@@ -34,6 +34,10 @@ class KMeansClassifierRoute(Resource):
             categoryTxt = BytesIO()
             categoryTxt.write(f"{category}\n".encode())
 
+            # Save in memory the object length
+            object_lengthTxt = BytesIO()
+            object_lengthTxt.write(f"{object_length}\n".encode())
+
             # Create a BytesIO object to store the ZIP file in memory
             zip_buffer = BytesIO()  
 
@@ -42,6 +46,9 @@ class KMeansClassifierRoute(Resource):
 
                 # Add the category to the ZIP file
                 zip_file.writestr(f'category.txt', categoryTxt.getvalue())
+
+                # Add the object length to the ZIP file
+                zip_file.writestr(f'object_length.txt', object_lengthTxt.getvalue())
 
                 for img_name in images_dict:
 
