@@ -9,13 +9,16 @@ class KNNClassifier(AIClassifier):
         
     def __init__(self):
         
+        # Load images parameters
+        self.img_crop_size = 3000
+
         # Preprocess parameters
         self.kernel_size = 5
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
-        train_data, train_labels = self.load_images(elements)
-        self.fit(train_data, train_labels, elements)
+        self.train_data, train_labels = self.load_images(elements)
+        self.fit(self.train_data, train_labels, elements)
 
     def fit(
         self, 
@@ -30,7 +33,7 @@ class KNNClassifier(AIClassifier):
         if train_labels.ndim != 1:
             raise Exception("train_labels must have 1 dimension")
 
-        self.train_images, _, _, _, _, _, _ = self.preprocess(train_images)
+        self.train_images, _, _, _, _, _, _ = self.img_to_vec(train_images)
         self.train_labels = train_labels
         self.categories = clusters_tags
 
@@ -39,8 +42,9 @@ class KNNClassifier(AIClassifier):
         imgs,
         k : int = 3
     ):
-
-        imgs_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.preprocess(imgs)
+        # Preprocess and vectorize the image
+        imgs_resized = self.preprocess_image(imgs)
+        imgs_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
         
         predictions = []
         for img_vec in imgs_vec:

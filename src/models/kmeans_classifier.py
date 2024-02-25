@@ -8,6 +8,9 @@ class KMeansClassifier(AIClassifier):
     main_logger = logging.Logger("KMeansClassifier")
         
     def __init__(self):
+
+        # Load images parameters
+        self.img_crop_size = 3000
         
         # Preprocess parameters
         self.kernel_size = 5
@@ -20,7 +23,7 @@ class KMeansClassifier(AIClassifier):
         self.k = len(elements)
         self.train_data, train_labels = self.load_images(elements)
 
-        self.train_images, _, _, _, _, _, _ = self.preprocess(self.train_data)
+        self.train_images, _, _, _, _, _, _ = self.img_to_vec(self.train_data)
         self.train_labels = train_labels
         self.categories = elements
 
@@ -31,8 +34,9 @@ class KMeansClassifier(AIClassifier):
         self, 
         imgs
     ):
-        # Preprocess the image
-        img_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.preprocess(imgs)
+        # Preprocess and vectorize the image
+        imgs_resized = self.preprocess_image(imgs)
+        img_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
         
         # Build a vector with the images to predict in the 0th position and the train images
         imgs_vec = np.concatenate([img_vec, self.train_images])

@@ -3,9 +3,8 @@ import os
 import cv2
 import numpy as np
 from pathlib import Path
-from skimage.morphology import disk
 from skimage import exposure
-from skimage.filters import threshold_yen, threshold_mean, threshold_triangle, rank
+from skimage.filters import threshold_triangle
 from skimage.measure import label, regionprops
 
 class AIClassifier(ABC):
@@ -24,6 +23,19 @@ class AIClassifier(ABC):
     def euclidean_distance(self, img, train_img):
         return np.sqrt(np.sum((img - train_img)**2))
 
+    def preprocess_image(self, imgs):
+        imgs_resized = []
+        for img in imgs:
+            # crop and resize image
+            y_size, x_size = img.shape
+            img_cropped = img[
+                round(y_size/2)-round(self.img_crop_size/2) : round(y_size/2)+round(self.img_crop_size/2), 
+                round(x_size/2)-round(self.img_crop_size/2) : round(x_size/2)+round(self.img_crop_size/2)
+            ]
+            img_resized = cv2.resize(img_cropped, (self.img_crop_size, self.img_crop_size))
+            imgs_resized.append(img_resized)
+        return imgs_resized
+
     def load_images(self, elements):
         # load images
         train_data = []
@@ -39,8 +51,8 @@ class AIClassifier(ABC):
                     cv2.IMREAD_GRAYSCALE
                 )
                 if img_new is not None:
-                    img_resized = cv2.resize(img_new, (500, 500))
-                    train_data.append(np.array(img_resized))
+                    img_resized = self.preprocess_image([img_new])
+                    train_data.append(np.array(img_resized[0]))
                     train_labels.append(elements.index(element))
 
                 else:
@@ -52,7 +64,7 @@ class AIClassifier(ABC):
 
         return train_data, train_labels
 
-    def preprocess(self, images):
+    def img_to_vec(self, images):
 
         # Preprocess train images
         img_vec = np.empty([1, 10])

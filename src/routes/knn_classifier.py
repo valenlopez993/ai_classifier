@@ -6,7 +6,6 @@ from models.knn_classifier import KNNClassifier
 
 import zipfile
 
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 from io import BytesIO
 from PIL import Image 
 
@@ -19,13 +18,8 @@ class KNNClassifierRoute(Resource):
 
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
-            
-            # img_crop_size = 500
-            # y_size, x_size = image.shape
-            # image = image[round(y_size/2)-img_crop_size : round(y_size/2)+img_crop_size, round(x_size/2)-img_crop_size : round(x_size/2)+img_crop_size]
-            image = cv2.resize(image, (500, 500))
 
-            category, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=6)
+            img_vec, endpoints, category, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
 
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
