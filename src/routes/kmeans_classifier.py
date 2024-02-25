@@ -19,24 +19,18 @@ class KMeansClassifierRoute(Resource):
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
 
-            img_vec, endpoints, centroids, object_length, category, images_dict = KMeansClassifierRoute.kmeans_classifier.predict([image])
+            img_vec, centroids, category, object_length, images_dict = KMeansClassifierRoute.kmeans_classifier.predict([image])
 
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
 
-            # Add the grayscale image to the dictionary
-            images_dict = {
-                "grayscale": image,
-                **images_dict
-            }
-
            # Save in memory the category
             categoryTxt = BytesIO()
-            categoryTxt.write(f"{category}\n".encode())
+            categoryTxt.write(f"{category[:-1]}".encode())
 
             # Save in memory the object length
             object_lengthTxt = BytesIO()
-            object_lengthTxt.write(f"{object_length}\n".encode())
+            object_lengthTxt.write(f"{object_length}".encode())
 
             # Create a BytesIO object to store the ZIP file in memory
             zip_buffer = BytesIO()  

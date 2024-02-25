@@ -17,7 +17,7 @@ class KMeansClassifier(AIClassifier):
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
         # Relation cm/px
-        self.relation_cm_px = 0.0264583333
+        self.relation_cm_px = 8.8/4032
 
         # K-means parameters
         self.k_means_iterations = 5
@@ -26,7 +26,7 @@ class KMeansClassifier(AIClassifier):
         self.k = len(elements)
         self.train_data, train_labels = self.load_images(elements)
 
-        self.train_images, _, _, _, _, _, _ = self.img_to_vec(self.train_data)
+        self.train_images, _, _, _, _, _ = self.img_to_vec(self.train_data)
         self.train_labels = train_labels
         self.categories = elements
 
@@ -39,7 +39,7 @@ class KMeansClassifier(AIClassifier):
     ):
         # Preprocess and vectorize the image
         imgs_resized = self.preprocess_image(imgs)
-        img_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
+        img_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
         
         # Build a vector with the images to predict in the 0th position and the train images
         imgs_vec = np.concatenate([img_vec, self.train_images])
@@ -94,21 +94,20 @@ class KMeansClassifier(AIClassifier):
 
                 # Get the closest centroid to the image to predict that is in the 0th position
                 prediction = self.categories[closest_centroids[0]]
-                # Calculate the length of the object if it is a "clavo" or a "tornillo"
+                # Calculate the length of the object if it is a "nail" or a "screw"
                 object_length = (
-                    np.sqrt((endpoints[2] - endpoints[0])**2 + (endpoints[3] - endpoints[1])**2) * self.relation_cm_px
+                    f"{round(self.calculate_length(imgs_resized[0], orientation) * self.relation_cm_px, 2)} cm"
                     if prediction in ["clavos", "tornillos"] 
                     else None
                 )
 
         return (
-            img_vec, 
-            endpoints, 
+            img_vec,
             final_centroids,
             prediction,
             object_length, 
             {
-                "Filtro Mediana": gamma_corrected,	
+                "Escala de grises": imgs_resized[0],	
                 "Binarizada": image_bw,
                 "Cierre": image_close,
                 "Apertura": image_open,

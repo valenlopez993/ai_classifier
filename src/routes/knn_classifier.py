@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import logging
 from flask_restful import Resource
 from flask import request, send_file, Response
 from models.knn_classifier import KNNClassifier
@@ -19,24 +20,18 @@ class KNNClassifierRoute(Resource):
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
 
-            img_vec, endpoints, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
+            img_vec, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
 
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
-
-            # Add the grayscale image to the dictionary
-            images_dict = {
-                "grayscale": image,
-                **images_dict
-            }
-
+ 
             # Save in memory the category
             categoryTxt = BytesIO()
-            categoryTxt.write(f"{category[0]}\n".encode())
+            categoryTxt.write(f"{category[0][:-1]}".encode())
 
             # Save in memory the object length
             object_lengthTxt = BytesIO()
-            object_lengthTxt.write(f"{object_length[0]}\n".encode())
+            object_lengthTxt.write(f"{object_length[0]}".encode())
 
             # Create a BytesIO object to store the ZIP file in memory
             zip_buffer = BytesIO()  

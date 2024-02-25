@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import os
 import cv2
+import math
 import numpy as np
 from pathlib import Path
-from skimage import exposure
 from skimage.filters import threshold_triangle
 from skimage.measure import label, regionprops
 
@@ -23,6 +23,29 @@ class AIClassifier(ABC):
     def euclidean_distance(self, img, train_img):
         return np.sqrt(np.sum((img - train_img)**2))
 
+    # Method to calculate the length of "nails" and "screws"
+    def calculate_length(self, img, orientation):
+        # Rotate the image to put the object vertically
+        angle = math.degrees(-orientation)
+        scale = 1.0
+        (height, width) = img.shape[:2]
+        center = (width / 2, height / 2)
+        matrix = cv2.getRotationMatrix2D(center, angle, scale)
+        rotated_img = cv2.warpAffine(img, matrix, (width, height))
+
+        # Labeling to get the bbox of the biggest object
+        label_image = label(rotated_img)
+        regions = regionprops(label_image)
+        area = 0
+        for props in regions:
+            if props.area > area:
+                area = props.area
+                minr, minc, maxr, maxc = props.bbox
+                length = maxr - minr
+
+        return length
+    
+    # Method to crop and resize the images to always have the same size
     def preprocess_image(self, imgs):
         imgs_resized = []
         for img in imgs:
@@ -64,14 +87,11 @@ class AIClassifier(ABC):
 
         return train_data, train_labels
 
+    # Method to convert the images to a vectors representation
     def img_to_vec(self, images):
-
         # Preprocess train images
         img_vec = np.empty([1, 10])
         for img in images:
-            
-            # Apply filter
-            gamma_corrected = exposure.adjust_sigmoid(img)
 
             # Binarize image
             thresh = threshold_triangle(img)
@@ -93,7 +113,7 @@ class AIClassifier(ABC):
             for props in regions:
                 if props.area > area:
                     main_label = props.label
-                    endpoints = props.bbox
+                    orientation = props.orientation
                     area = props.area
                     perimeter = props.perimeter
                     eccentricity = props.eccentricity 
@@ -111,4 +131,4 @@ class AIClassifier(ABC):
 
             img_vec = np.append(img_vec, [new_row], axis=0)
 
-        return img_vec[1:], endpoints, gamma_corrected, image_bw, image_close, image_open, label_image
+        return img_vec[1:], orientation, image_bw, image_close, image_open, label_image

@@ -17,7 +17,7 @@ class KNNClassifier(AIClassifier):
         self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
 
         # Relation cm/px
-        self.relation_cm_px = 0.0264583333
+        self.relation_cm_px = 8.8/4032
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         self.train_data, train_labels = self.load_images(elements)
@@ -36,7 +36,7 @@ class KNNClassifier(AIClassifier):
         if train_labels.ndim != 1:
             raise Exception("train_labels must have 1 dimension")
 
-        self.train_images, _, _, _, _, _, _ = self.img_to_vec(train_images)
+        self.train_images, _, _, _, _, _ = self.img_to_vec(train_images)
         self.train_labels = train_labels
         self.categories = clusters_tags
 
@@ -47,7 +47,7 @@ class KNNClassifier(AIClassifier):
     ):
         # Preprocess and vectorize the image
         imgs_resized = self.preprocess_image(imgs)
-        imgs_vec, endpoints, gamma_corrected, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
+        imgs_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
         
         predictions = []
         for img_vec in imgs_vec:
@@ -62,21 +62,20 @@ class KNNClassifier(AIClassifier):
             most_common = np.bincount(neighbors).argmax()
             predictions.append(self.categories[most_common])
 
-            # Calculate the length of the object if it is a "clavo" or a "tornillo"
+            # Calculate the length of the object if it is a "nail" or a "screw"
             objects_length = [
-                np.sqrt((endpoints[2] - endpoints[0])**2 + (endpoints[3] - endpoints[1])**2)  * self.relation_cm_px
+                f"{round(self.calculate_length(imgs_resized[0], orientation) * self.relation_cm_px, 2)} cm"
                 if prediction in ["clavos", "tornillos"] 
                 else None
                 for prediction in predictions
             ]
             
         return (
-            img_vec, 
-            endpoints, 
+            img_vec,
             predictions, 
             objects_length,
             {
-                "Filtro Mediana": gamma_corrected,	
+                "Escala de grises": imgs_resized[0],	
                 "Binarizada": image_bw,
                 "Cierre": image_close,
                 "Apertura": image_open,
