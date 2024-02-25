@@ -18,9 +18,9 @@ class KMeansClassifier(AIClassifier):
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         self.k = len(elements)
-        train_data, train_labels = self.load_images(elements)
+        self.train_data, train_labels = self.load_images(elements)
 
-        self.train_images, _, _, _, _, _, _ = self.preprocess(train_data)
+        self.train_images, _, _, _, _, _, _ = self.preprocess(self.train_data)
         self.train_labels = train_labels
         self.categories = elements
 
@@ -91,7 +91,7 @@ class KMeansClassifier(AIClassifier):
         return (
             img_vec, 
             endpoints, 
-            centroids,
+            final_centroids,
             prediction, 
             {
                 "Filtro Mediana": gamma_corrected,	
