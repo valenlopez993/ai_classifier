@@ -6,24 +6,13 @@ from models.ai_classifier import AIClassifier
 class KNNClassifier(AIClassifier):
         
     def __init__(self):
+        super().__init__()
         
         self.logger = AIClassifierLogger("KNNClassifier")
-
-        # Load images parameters
-        self.img_crop_size = 2000
-
-        # Preprocess parameters
-        self.kernel_size = 5
-        self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
-
-        # Relation cm/px
-        self.relation_cm_px = 8.8/4032
-
-        elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         
         self.logger.debug(f"Loading dataset")
-        self.train_data, train_labels = self.load_images(elements)
-        self.fit(self.train_data, train_labels, elements)
+        self.train_data, train_labels = self.load_images(self.elements)
+        self.fit(self.train_data, train_labels, self.elements)
         self.logger.info(f"Dataset loaded")
 
     def fit(

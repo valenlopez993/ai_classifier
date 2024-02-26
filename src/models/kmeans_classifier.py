@@ -6,31 +6,20 @@ from models.ai_classifier import AIClassifier
 class KMeansClassifier(AIClassifier):
         
     def __init__(self):
+        super().__init__()
 
         self.logger = AIClassifierLogger("KMeansClassifier")
 
-        # Load images parameters
-        self.img_crop_size = 2000
-        
-        # Preprocess parameters
-        self.kernel_size = 5
-        self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
-
-        # Relation cm/px
-        self.relation_cm_px = 8.8/4032
-
         # K-means parameters
         self.k_means_iterations = 5
-
-        elements = ["tuercas", "tornillos", "arandelas", "clavos"]
-        self.k = len(elements)
+        self.k = len(self.elements)
 
         self.logger.debug(f"Loading dataset")
-        self.train_data, train_labels = self.load_images(elements)
+        self.train_data, train_labels = self.load_images(self.elements)
 
         self.train_images, _, _, _, _, _ = self.img_to_vec(self.train_data)
         self.train_labels = train_labels
-        self.categories = elements
+        self.categories = self.elements
         self.logger.info(f"Dataset loaded")
 
     def fit():

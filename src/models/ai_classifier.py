@@ -14,6 +14,20 @@ class AIClassifier(ABC):
     root_folder_path = Path(__file__).parent.parent
     root_folder_path = os.path.join(root_folder_path, "..")
 
+    def __init__(self):
+        # Load images parameters
+        self.img_crop_size = 2000
+
+        # Preprocess parameters
+        self.kernel_size = 5
+        self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
+
+        # Relation cm/px
+        self.relation_cm_px = 8.8/4032
+
+        # Elements to classify
+        self.elements = ["tuercas", "tornillos", "arandelas", "clavos"]
+
     @abstractmethod
     def fit(self, train_images, train_labels, clusters_tags):
         pass
