@@ -19,7 +19,7 @@ class KNNClassifierRoute(Resource):
 
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
-
+          
             img_vec, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
 
             # Delete the label image because cannot be serialized

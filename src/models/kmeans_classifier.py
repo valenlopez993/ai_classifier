@@ -1,16 +1,16 @@
 import numpy as np
-import logging
+from ai_classifier_logger import AIClassifierLogger
 
 from models.ai_classifier import AIClassifier
 
 class KMeansClassifier(AIClassifier):
-
-    main_logger = logging.Logger("KMeansClassifier")
         
     def __init__(self):
 
+        self.logger = AIClassifierLogger("KMeansClassifier")
+
         # Load images parameters
-        self.img_crop_size = 3000
+        self.img_crop_size = 2000
         
         # Preprocess parameters
         self.kernel_size = 5
@@ -24,11 +24,14 @@ class KMeansClassifier(AIClassifier):
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
         self.k = len(elements)
+
+        self.logger.debug(f"Loading dataset")
         self.train_data, train_labels = self.load_images(elements)
 
         self.train_images, _, _, _, _, _ = self.img_to_vec(self.train_data)
         self.train_labels = train_labels
         self.categories = elements
+        self.logger.info(f"Dataset loaded")
 
     def fit():
         pass
@@ -37,6 +40,8 @@ class KMeansClassifier(AIClassifier):
         self, 
         imgs
     ):
+
+        self.logger.info(f"Predicting")
         # Preprocess and vectorize the image
         imgs_resized = self.preprocess_image(imgs)
         img_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
@@ -45,6 +50,7 @@ class KMeansClassifier(AIClassifier):
         imgs_vec = np.concatenate([img_vec, self.train_images])
 
         # KMeans algorithm
+        self.logger.info(f"Running algorithm")
         # Repeat the algorithm "self.k_means_iterations" times and select the centroids with the lowest variance
         centroids_variance_old = np.array([np.inf for i in range(self.k)])
         for it in range(self.k_means_iterations):
@@ -94,12 +100,17 @@ class KMeansClassifier(AIClassifier):
 
                 # Get the closest centroid to the image to predict that is in the 0th position
                 prediction = self.categories[closest_centroids[0]]
+
                 # Calculate the length of the object if it is a "nail" or a "screw"
-                object_length = (
-                    f"{round(self.calculate_length(imgs_resized[0], orientation) * self.relation_cm_px, 2)} cm"
-                    if prediction in ["clavos", "tornillos"] 
-                    else None
-                )
+                if prediction in ["clavos", "tornillos"]:
+                    self.logger.warning(f"Calculating length")
+                    object_length = (
+                        f"{round(self.calculate_length(image_open, orientation) * self.relation_cm_px, 2)} cm"
+                    )
+                else:
+                    object_length = None
+        
+        self.logger.info(f"Predicting done")
 
         return (
             img_vec,

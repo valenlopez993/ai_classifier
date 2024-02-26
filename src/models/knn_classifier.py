@@ -1,16 +1,16 @@
 import numpy as np
-import logging
+from ai_classifier_logger import AIClassifierLogger
 
 from models.ai_classifier import AIClassifier
 
 class KNNClassifier(AIClassifier):
-
-    main_logger = logging.Logger("KNNClassifier")
         
     def __init__(self):
         
+        self.logger = AIClassifierLogger("KNNClassifier")
+
         # Load images parameters
-        self.img_crop_size = 3000
+        self.img_crop_size = 2000
 
         # Preprocess parameters
         self.kernel_size = 5
@@ -20,8 +20,11 @@ class KNNClassifier(AIClassifier):
         self.relation_cm_px = 8.8/4032
 
         elements = ["tuercas", "tornillos", "arandelas", "clavos"]
+        
+        self.logger.debug(f"Loading dataset")
         self.train_data, train_labels = self.load_images(elements)
         self.fit(self.train_data, train_labels, elements)
+        self.logger.info(f"Dataset loaded")
 
     def fit(
         self, 
@@ -45,10 +48,15 @@ class KNNClassifier(AIClassifier):
         imgs,
         k : int = 3
     ):
+
+        self.logger.info(f"Predicting")
+
         # Preprocess and vectorize the image
+        self.logger.info(f"Preprocessing images")
         imgs_resized = self.preprocess_image(imgs)
         imgs_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
         
+        self.logger.info(f"Running algorithm")
         predictions = []
         for img_vec in imgs_vec:
             distances = [
@@ -63,12 +71,17 @@ class KNNClassifier(AIClassifier):
             predictions.append(self.categories[most_common])
 
             # Calculate the length of the object if it is a "nail" or a "screw"
-            objects_length = [
-                f"{round(self.calculate_length(imgs_resized[0], orientation) * self.relation_cm_px, 2)} cm"
-                if prediction in ["clavos", "tornillos"] 
-                else None
-                for prediction in predictions
-            ]
+            objects_length = []
+            for prediction in predictions:
+                if prediction in ["clavos", "tornillos"]:
+                    self.logger.warning(f"Calculating length")
+                    objects_length.append(
+                        f"{round(self.calculate_length(image_open, orientation) * self.relation_cm_px, 2)} cm"
+                    )
+                else:
+                    objects_length.append(None)
+
+        self.logger.info(f"Predicting done")
             
         return (
             img_vec,
