@@ -65,7 +65,7 @@ class KNNClassifier(AIClassifier):
                 if prediction in ["clavos", "tornillos"]:
                     self.logger.warning(f"Calculating length")
                     objects_length.append(
-                        f"{round(self.calculate_length(image_open, orientation) * self.relation_cm_px, 2)} cm"
+                        self.calculate_length(image_open, orientation)
                     )
                 else:
                     objects_length.append(None)

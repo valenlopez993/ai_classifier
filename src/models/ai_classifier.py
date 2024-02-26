@@ -59,7 +59,8 @@ class AIClassifier(ABC):
                 minr, minc, maxr, maxc = props.bbox
                 length = maxr - minr
 
-        return length
+        length = round(length * self.relation_cm_px, 2) # cm
+        return f"{length} cm"
     
     # Method to crop and resize the images to always have the same size
     def preprocess_image(self, imgs):

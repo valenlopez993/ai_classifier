@@ -94,7 +94,7 @@ class KMeansClassifier(AIClassifier):
                 if prediction in ["clavos", "tornillos"]:
                     self.logger.warning(f"Calculating length")
                     object_length = (
-                        f"{round(self.calculate_length(image_open, orientation) * self.relation_cm_px, 2)} cm"
+                        self.calculate_length(image_open, orientation)
                     )
                 else:
                     object_length = None
