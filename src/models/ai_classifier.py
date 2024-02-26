@@ -4,6 +4,8 @@ import cv2
 import math
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+from io import BytesIO
 from skimage.filters import threshold_triangle
 from skimage.measure import label, regionprops
 
@@ -90,7 +92,13 @@ class AIClassifier(ABC):
     # Method to convert the images to a vectors representation
     def img_to_vec(self, images):
         # Preprocess train images
-        img_vec = np.empty([1, 10])
+
+        # Create an array to store the following properties of the images:
+        # - Area
+        # - Eccentricity
+        # - 7 Hu moments
+        img_vec = np.empty([1, 9])
+        
         for img in images:
 
             # Binarize image
@@ -115,7 +123,6 @@ class AIClassifier(ABC):
                     main_label = props.label
                     orientation = props.orientation
                     area = props.area
-                    perimeter = props.perimeter
                     eccentricity = props.eccentricity 
                     moments_hu = props.moments_hu
 
@@ -124,7 +131,6 @@ class AIClassifier(ABC):
 
             new_row = np.array([
                 area, 
-                perimeter,
                 eccentricity, 
                 *moments_hu
             ])
