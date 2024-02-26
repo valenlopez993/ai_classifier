@@ -89,7 +89,7 @@ class KNNClassifier(AIClassifier):
             objects_length,
             {
                 "Escala de grises": imgs_resized[0],	
-                "Binarizada": image_bw,
+                "Binarizacion": image_bw,
                 "Cierre": image_close,
                 "Apertura": image_open,
                 "label_image": label_image
