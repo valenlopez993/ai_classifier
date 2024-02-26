@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
-import logging
 from flask_restful import Resource
-from flask import request, send_file, Response
+from flask import request, send_file
 from models.knn_classifier import KNNClassifier
 
 import zipfile

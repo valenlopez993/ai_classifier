@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from flask_restful import Resource
-from flask import request, send_file, Response
+from flask import request, send_file
 from models.kmeans_classifier import KMeansClassifier
 
 import zipfile
@@ -24,7 +24,7 @@ class KMeansClassifierRoute(Resource):
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
 
-           # Save in memory the category
+            # Save in memory the category
             categoryTxt = BytesIO()
             categoryTxt.write(f"{category[:-1]}".encode())
 
