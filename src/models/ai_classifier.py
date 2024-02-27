@@ -28,7 +28,32 @@ class AIClassifier(ABC):
         self.relation_cm_px = 8.8/4032
 
         # Elements to classify
-        self.elements = ["tuercas", "tornillos", "arandelas", "clavos"]
+        self.elements = {
+            "tuercas" : 0, 
+            "tornillos" : 0, 
+            "arandelas" : 0, 
+            "clavos" : 0
+        }
+
+        # Data for plots
+        self.image_props_label = [
+            "Excentricidad", 
+            "Momento de Hu 1", 
+            "Momento de Hu 2",
+            "Momento de Hu 3",
+            "Momento de Hu 4",
+            "Momento de Hu 5",
+            "Momento de Hu 6",
+            "Momento de Hu 7"
+        ]
+
+        self.plot_colors = {
+            "Nuevo Objeto" : "red",
+            "Tuercas" : "blue",
+            "Tornillos" : "green",
+            "Arandelas" : "black",
+            "Clavos" : "orange",
+        }
 
     @abstractmethod
     def fit(self, train_images, train_labels, clusters_tags):
@@ -86,8 +111,9 @@ class AIClassifier(ABC):
         images_path = os.path.join(AIClassifier.root_folder_path, "images")
 
         for element in elements:
-
-            for img in os.listdir(f"{images_path}/{element}"):
+            imgs = os.listdir(f"{images_path}/{element}")
+            self.elements[element] = len(imgs)
+            for img in imgs:
                 img_new = cv2.imread(
                     f"{images_path}/{element}/{img}",
                     cv2.IMREAD_GRAYSCALE

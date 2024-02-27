@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from ai_classifier_logger import AIClassifierLogger
 
 from models.ai_classifier import AIClassifier
@@ -11,8 +12,8 @@ class KNNClassifier(AIClassifier):
         self.logger = AIClassifierLogger("KNNClassifier")
         
         self.logger.debug(f"Loading dataset")
-        self.train_data, train_labels = self.load_images(self.elements)
-        self.fit(self.train_data, train_labels, self.elements)
+        self.train_data, train_labels = self.load_images(list(self.elements.keys()))
+        self.fit(self.train_data, train_labels, list(self.elements.keys()))
         self.logger.info(f"Dataset loaded")
 
     def fit(
@@ -83,3 +84,64 @@ class KNNClassifier(AIClassifier):
                 "Apertura": image_open,
                 "label_image": label_image
             })
+
+    def generate_data_plots(
+        self, 
+        img_vec, 
+        main_prop_for_plot="Excentricidad"
+    ):
+        # Select the main property for the plot
+        main_image_prop = self.image_props_label.index(main_prop_for_plot)
+        other_image_props = list(range(len(self.image_props_label)))
+        other_image_props.remove(main_image_prop)
+
+        num_tuercas = self.elements["tuercas"]
+        num_tornillos = self.elements["tornillos"]
+        num_arandelas = self.elements["arandelas"]
+        num_clavos = self.elements["clavos"]
+
+        fig = plt.figure(figsize=(8, 8))
+        figs_np = {}
+        for prop2 in other_image_props:
+
+            x_label = self.image_props_label[main_image_prop]
+            y_label = self.image_props_label[prop2]
+
+            tuercas_x = self.train_images[0:num_tuercas, main_image_prop]
+            tuercas_y = self.train_images[0:num_tuercas, prop2]
+
+            tornillos_x = self.train_images[num_tuercas:num_tuercas+num_tornillos, main_image_prop]
+            tornillos_y = self.train_images[num_tuercas:num_tuercas+num_tornillos, prop2]
+
+            arandelas_x = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, main_image_prop]
+            arandelas_y = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, prop2]
+
+            clavos_x = self.train_images[num_tuercas+num_tornillos+num_arandelas:, main_image_prop]
+            clavos_y = self.train_images[num_tuercas+num_tornillos+num_arandelas:, prop2]
+
+            # Create the scatter plot for the new datapoint
+            new_obj_x = img_vec[main_image_prop]
+            new_obj_y = img_vec[prop2]
+            plt.scatter(new_obj_x, new_obj_y, c=self.plot_colors["Nuevo Objeto"], label="Nuevo Objeto", marker="x")
+            
+            # Create the scatter plot for the dataset
+            plt.scatter(tuercas_x, tuercas_y, c=self.plot_colors["Tuercas"], label="Tuercas")
+            plt.scatter(tornillos_x, tornillos_y, c=self.plot_colors["Tornillos"], label="Tornillos")
+            plt.scatter(arandelas_x, arandelas_y, c=self.plot_colors["Arandelas"], label="Arandelas")
+            plt.scatter(clavos_x, clavos_y, c=self.plot_colors["Clavos"], label="Clavos")
+            plt.xlabel(x_label)
+            plt.ylabel(y_label)
+            plt.legend()
+            plt.grid(True)
+
+            # Convert the plot to a NumPy array
+            canvas = fig.canvas
+            canvas.draw()
+            width, height = fig.get_size_inches() * fig.get_dpi()
+            image_np = np.frombuffer(canvas.tostring_rgb(), dtype='uint8').reshape(int(height), int(width), 3)
+
+            figs_np[f"plot_{y_label} vs {x_label}"] = image_np
+
+            fig.clear()
+
+        return figs_np

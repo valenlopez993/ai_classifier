@@ -20,9 +20,15 @@ class KNNClassifierRoute(Resource):
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
           
             img_vec, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
-
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
+
+            # Get the plots
+            fig_plots = KNNClassifierRoute.knn_classifier.generate_data_plots(img_vec=img_vec)
+            images_dict = {
+                **images_dict, 
+                **fig_plots
+            }
  
             # Save in memory the category
             categoryTxt = BytesIO()
