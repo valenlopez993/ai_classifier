@@ -118,16 +118,18 @@ class KNNClassifier(AIClassifier):
             clavos_x = self.train_images[num_tuercas+num_tornillos+num_arandelas:, main_image_prop]
             clavos_y = self.train_images[num_tuercas+num_tornillos+num_arandelas:, prop2]
 
-            # Create the scatter plot for the new datapoint
-            new_obj_x = img_vec[main_image_prop]
-            new_obj_y = img_vec[prop2]
-            plt.scatter(new_obj_x, new_obj_y, c=self.plot_colors["Nuevo Objeto"], label="Nuevo Objeto", marker="x")
             
             # Create the scatter plot for the dataset
             plt.scatter(tuercas_x, tuercas_y, c=self.plot_colors["Tuercas"], label="Tuercas")
             plt.scatter(tornillos_x, tornillos_y, c=self.plot_colors["Tornillos"], label="Tornillos")
             plt.scatter(arandelas_x, arandelas_y, c=self.plot_colors["Arandelas"], label="Arandelas")
             plt.scatter(clavos_x, clavos_y, c=self.plot_colors["Clavos"], label="Clavos")
+
+            # Create the scatter plot for the new datapoint
+            new_obj_x = img_vec[main_image_prop]
+            new_obj_y = img_vec[prop2]
+            plt.scatter(new_obj_x, new_obj_y, c=self.plot_colors["Nuevo Objeto"], label="Nuevo Objeto", marker="x", s=100, linewidths=4)
+            
             plt.xlabel(x_label)
             plt.ylabel(y_label)
             plt.legend()

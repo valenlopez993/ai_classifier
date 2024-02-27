@@ -12,7 +12,6 @@ class KMeansClassifier(AIClassifier):
         self.logger = AIClassifierLogger("KMeansClassifier")
 
         # K-means parameters
-        self.k_means_iterations = 5
         self.k = len(list(self.elements.keys()))
 
         self.logger.debug(f"Loading dataset")
@@ -25,6 +24,41 @@ class KMeansClassifier(AIClassifier):
 
     def fit():
         pass
+
+    def identify_clusters_and_get_prediction(
+        self, 
+        centroids,
+        new_datapoint_closest_centroid,
+        knn_k=6
+    ):
+        # KNN algorithm
+        knn_k = 6
+
+        # Calculate the distance of each image to each centroid
+        distances = [
+            [
+                self.euclidean_distance(centroid, img)
+                for img in self.train_images
+            ]
+            for centroid in centroids
+        ]
+
+        # Get the k-nearest neighbors of each centroid
+        neighbors_index = np.argpartition(distances, knn_k, axis=1)[:, :knn_k]
+        neighbors = self.train_labels[neighbors_index]
+
+        # Get the most common category of the k-nearest neighbors
+        most_commons = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=neighbors)
+
+        # Order the centroids by the same order of the categories
+        final_centroids = []
+        for category in self.categories:
+            final_centroids.append(centroids[most_commons == self.categories.index(category)][0])
+        final_centroids = np.vstack([final_centroids[0], final_centroids[1], final_centroids[2], final_centroids[3]])
+
+        # Get the category of the closest centroid to the new datapoint
+        prediction = self.categories[most_commons[new_datapoint_closest_centroid]]
+        return final_centroids, prediction
 
     def predict(
         self, 
@@ -41,64 +75,53 @@ class KMeansClassifier(AIClassifier):
 
         # KMeans algorithm
         self.logger.info(f"Running algorithm")
-        # Repeat the algorithm "self.k_means_iterations" times and select the centroids with the lowest variance
-        centroids_variance_old = np.array([np.inf for i in range(self.k)])
-        for it in range(self.k_means_iterations):
 
-            # Initialize the centroids with random images from the train set
-            random_args = np.random.randint(0, self.train_images.shape[0], self.k)
-            centroids = self.train_images[random_args]
+        # Initialize the centroids with random images from the train set
+        random_args = np.random.randint(0, self.train_images.shape[0], self.k)
+        centroids = self.train_images[random_args]
 
-            # Repeat the algorithm until the centroids do not change more than the "centroids_error"
-            old_centroids = np.copy(centroids)
-            centroids_error = 0.01
-            while (abs(np.sum(old_centroids - centroids)) < centroids_error):
+        # Repeat the algorithm until the centroids do not change more than the "centroids_error"
+        old_centroids = np.copy(centroids)
+        centroids_error = 0.001
+        while (True):
 
-                # Calculate the distance of each image to each centroid
-                distances = [
-                    [
-                        self.euclidean_distance(img, centroid)
-                        for centroid in centroids
-                    ]
-                    for img in imgs_vec
+            # Calculate the distance of each image to each centroid
+            distances = [
+                [
+                    self.euclidean_distance(img, centroid)
+                    for centroid in centroids
                 ]
+                for img in imgs_vec
+            ]
 
-                # Assign the closest centroid to each image
-                closest_centroids = np.argmin(distances, axis=1)
+            # Assign the closest centroid to each image
+            closest_centroids = np.argmin(distances, axis=1)
 
-                # Update the centroids
-                old_centroids = np.copy(centroids)
-                for i in range(self.k):
-                    new_centroid = np.mean(imgs_vec[closest_centroids == i], axis=0)
-                    if not np.isnan(new_centroid).any():
-                        centroids[i] = new_centroid
-
-            # After the algorithm converges, calculate the variance of the centroids
-            centroids_variance = []
+            # Update the centroids
+            old_centroids = np.copy(centroids)
             for i in range(self.k):
-                centroids_variance_by_dim = np.var(imgs_vec[closest_centroids == i], axis=0)
-                if not np.isnan(centroids_variance_by_dim).any():
-                    centroids_variance.append(np.var(centroids_variance_by_dim))
-                else:
-                    centroids_variance.append(np.max(distances))
+                new_centroid = np.mean(imgs_vec[closest_centroids == i], axis=0)
+                if not np.isnan(new_centroid).any():
+                    centroids[i] = new_centroid
 
-            # If the variance of the centroids is lower than the previous one, 
-            # save the centroids, the variance and the prediction
-            if (sum(centroids_variance) < sum(centroids_variance_old)):
-                centroids_variance_old = centroids_variance.copy()
-                final_centroids = centroids.copy()
+            # Break the loop if the centroids do not change more than the "centroids_error"
+            if (abs(np.sum(old_centroids - centroids)) < centroids_error): break
 
-                # Get the closest centroid to the image to predict that is in the 0th position
-                prediction = self.categories[closest_centroids[0]]
-
-                # Calculate the length of the object if it is a "nail" or a "screw"
-                if prediction in ["clavos", "tornillos"]:
-                    self.logger.warning(f"Calculating length")
-                    object_length = (
-                        self.calculate_length(image_open, orientation)
-                    )
-                else:
-                    object_length = None
+        # Indentify the cluster of each centroid and
+        # get the closest centroid to the image to predict that is in the 0th position
+        final_centroids, prediction = self.identify_clusters_and_get_prediction(
+            centroids=centroids,
+            new_datapoint_closest_centroid=closest_centroids[0]
+        )
+        
+        # Calculate the length of the object if it is a "nail" or a "screw"
+        if prediction in ["clavos", "tornillos"]:
+            self.logger.warning(f"Calculating length")
+            object_length = (
+                self.calculate_length(image_open, orientation)
+            )
+        else:
+            object_length = None
         
         self.logger.info(f"Predicting done")
 
@@ -153,24 +176,25 @@ class KMeansClassifier(AIClassifier):
             centroids_x = centroids[:, main_image_prop]
             centroids_y = centroids[:, prop2]
 
-            # Create the scatter plot for the new datapoint
-            new_obj_x = img_vec[main_image_prop]
-            new_obj_y = img_vec[prop2]
-            plt.scatter(new_obj_x, new_obj_y, c=self.plot_colors["Nuevo Objeto"], label="Nuevo Objeto", marker="x")
             
             # Create the scatter plot for the dataset
             plt.scatter(tuercas_x, tuercas_y, c=self.plot_colors["Tuercas"], label="Tuercas")
-            plt.scatter(centroids_x[0], centroids_y[0], c=self.plot_colors["Tuercas"], label="Tuercas", marker="D")
+            plt.scatter(centroids_x[0], centroids_y[0], c=self.plot_colors["Tuercas"], label="Centroide - Tuercas", marker="D", s=100, linewidths=4)
 
             plt.scatter(tornillos_x, tornillos_y, c=self.plot_colors["Tornillos"], label="Tornillos")
-            plt.scatter(centroids_x[1], centroids_y[1], c=self.plot_colors["Tornillos"], label="Tornillos", marker="D")
+            plt.scatter(centroids_x[1], centroids_y[1], c=self.plot_colors["Tornillos"], label="Centroide - Tornillos", marker="D", s=100, linewidths=4)
 
             plt.scatter(arandelas_x, arandelas_y, c=self.plot_colors["Arandelas"], label="Arandelas")
-            plt.scatter(centroids_x[2], centroids_y[2], c=self.plot_colors["Arandelas"], label="Arandelas", marker="D")
+            plt.scatter(centroids_x[2], centroids_y[2], c=self.plot_colors["Arandelas"], label="Centroide - Arandelas", marker="D", s=100, linewidths=4)
 
             plt.scatter(clavos_x, clavos_y, c=self.plot_colors["Clavos"], label="Clavos")
-            plt.scatter(centroids_x[3], centroids_y[3], c=self.plot_colors["Clavos"], label="Clavos", marker="D")
+            plt.scatter(centroids_x[3], centroids_y[3], c=self.plot_colors["Clavos"], label="Centroide - Clavos", marker="D", s=100, linewidths=4)
 
+            # Create the scatter plot for the new datapoint
+            new_obj_x = img_vec[main_image_prop]
+            new_obj_y = img_vec[prop2]
+            plt.scatter(new_obj_x, new_obj_y, c=self.plot_colors["Nuevo Objeto"], label="Nuevo Objeto", marker="x", s=100, linewidths=4)
+            
             plt.xlabel(x_label)
             plt.ylabel(y_label)
             plt.legend()

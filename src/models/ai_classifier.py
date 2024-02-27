@@ -129,7 +129,7 @@ class AIClassifier(ABC):
 
         return train_data, train_labels
 
-    # Method to convert the images to a vectors representation
+    # Method to convert the images to a vector representation
     def img_to_vec(self, images):
         # Preprocess train images
 
