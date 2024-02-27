@@ -19,7 +19,7 @@ class KNNClassifierRoute(Resource):
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
           
-            img_vec, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict([image], k=3)
+            img_vec, category, object_length, images_dict = KNNClassifierRoute.knn_classifier.predict(image, k=3)
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
 
@@ -32,11 +32,11 @@ class KNNClassifierRoute(Resource):
  
             # Save in memory the category
             categoryTxt = BytesIO()
-            categoryTxt.write(f"{category[0][:-1]}".encode())
+            categoryTxt.write(f"{category[:-1]}".encode())
 
             # Save in memory the object length
             object_lengthTxt = BytesIO()
-            object_lengthTxt.write(f"{object_length[0]}".encode())
+            object_lengthTxt.write(f"{object_length}".encode())
 
             # Create a BytesIO object to store the ZIP file in memory
             zip_buffer = BytesIO()  

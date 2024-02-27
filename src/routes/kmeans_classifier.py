@@ -19,7 +19,7 @@ class KMeansClassifierRoute(Resource):
             image = np.frombuffer(image.read(), np.uint8)
             image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
 
-            img_vec, centroids, category, object_length, images_dict = KMeansClassifierRoute.kmeans_classifier.predict([image])
+            img_vec, centroids, category, object_length, images_dict = KMeansClassifierRoute.kmeans_classifier.predict(image)
             # Delete the label image because cannot be serialized
             del images_dict["label_image"]
 

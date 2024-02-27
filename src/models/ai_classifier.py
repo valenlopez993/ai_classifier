@@ -90,18 +90,15 @@ class AIClassifier(ABC):
         return f"{length} cm"
     
     # Method to crop and resize the images to always have the same size
-    def preprocess_image(self, imgs):
-        imgs_resized = []
-        for img in imgs:
-            # crop and resize image
-            y_size, x_size = img.shape
-            img_cropped = img[
-                round(y_size/2)-round(self.img_crop_size/2) : round(y_size/2)+round(self.img_crop_size/2), 
-                round(x_size/2)-round(self.img_crop_size/2) : round(x_size/2)+round(self.img_crop_size/2)
-            ]
-            img_resized = cv2.resize(img_cropped, (self.img_crop_size, self.img_crop_size))
-            imgs_resized.append(img_resized)
-        return imgs_resized
+    def preprocess_image(self, img):
+        # crop and resize image
+        y_size, x_size = img.shape
+        img_cropped = img[
+            round(y_size/2)-round(self.img_crop_size/2) : round(y_size/2)+round(self.img_crop_size/2), 
+            round(x_size/2)-round(self.img_crop_size/2) : round(x_size/2)+round(self.img_crop_size/2)
+        ]
+        img_resized = cv2.resize(img_cropped, (self.img_crop_size, self.img_crop_size))
+        return img_resized
 
     def load_images(self, elements):
         # load images
@@ -119,8 +116,8 @@ class AIClassifier(ABC):
                     cv2.IMREAD_GRAYSCALE
                 )
                 if img_new is not None:
-                    img_resized = self.preprocess_image([img_new])
-                    train_data.append(np.array(img_resized[0]))
+                    img_resized = self.preprocess_image(img_new)
+                    train_data.append(np.array(img_resized))
                     train_labels.append(elements.index(element))
 
                 else:

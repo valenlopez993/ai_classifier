@@ -28,13 +28,13 @@ class KMeansClassifier(AIClassifier):
 
     def predict(
         self, 
-        imgs
+        img
     ):
-
         self.logger.info(f"Predicting")
         # Preprocess and vectorize the image
-        imgs_resized = self.preprocess_image(imgs)
-        img_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
+        img_resized = self.preprocess_image(img)
+        img_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec([img_resized])
+        img_vec = img_vec[0]
         
         # Build a vector with the images to predict in the 0th position and the train images
         imgs_vec = np.vstack([img_vec, self.train_images])
@@ -75,7 +75,7 @@ class KMeansClassifier(AIClassifier):
 
             # After the algorithm converges, calculate the variance of the centroids
             centroids_variance = []
-            for i in range(centroids.shape[0]):
+            for i in range(self.k):
                 centroids_variance_by_dim = np.var(imgs_vec[closest_centroids == i], axis=0)
                 if not np.isnan(centroids_variance_by_dim).any():
                     centroids_variance.append(np.var(centroids_variance_by_dim))
@@ -103,12 +103,12 @@ class KMeansClassifier(AIClassifier):
         self.logger.info(f"Predicting done")
 
         return (
-            img_vec[0],
+            img_vec,
             final_centroids,
             prediction,
             object_length, 
             {
-                "Escala de grises": imgs_resized[0],	
+                "Escala de grises": img_resized,	
                 "Binarizacion": image_bw,
                 "Cierre": image_close,
                 "Apertura": image_open,

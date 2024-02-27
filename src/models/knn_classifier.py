@@ -35,7 +35,7 @@ class KNNClassifier(AIClassifier):
 
     def predict(
         self, 
-        imgs,
+        img,
         k : int = 3
     ):
 
@@ -43,42 +43,41 @@ class KNNClassifier(AIClassifier):
 
         # Preprocess and vectorize the image
         self.logger.info(f"Preprocessing images")
-        imgs_resized = self.preprocess_image(imgs)
-        imgs_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec(imgs_resized)
+        img_resized = self.preprocess_image(img)
+        img_vec, orientation, image_bw, image_close, image_open, label_image = self.img_to_vec([img_resized])
+        img_vec = img_vec[0]
         
         self.logger.info(f"Running algorithm")
-        predictions = []
-        for img_vec in imgs_vec:
-            distances = [
-                self.euclidean_distance(img_vec, train_img)
-                for train_img in self.train_images
-            ]
+        
+        distances = [
+            self.euclidean_distance(img_vec, train_img)
+            for train_img in self.train_images
+        ]
 
-            neighbors_index = np.argsort(distances)[:k]
-            neighbors = self.train_labels[neighbors_index]
+        neighbors_index = np.argsort(distances)[:k]
+        neighbors = self.train_labels[neighbors_index]
 
-            most_common = np.bincount(neighbors).argmax()
-            predictions.append(self.categories[most_common])
+        most_common = np.bincount(neighbors).argmax()
+        prediction = self.categories[most_common]
 
-            # Calculate the length of the object if it is a "nail" or a "screw"
-            objects_length = []
-            for prediction in predictions:
-                if prediction in ["clavos", "tornillos"]:
-                    self.logger.warning(f"Calculating length")
-                    objects_length.append(
-                        self.calculate_length(image_open, orientation)
-                    )
-                else:
-                    objects_length.append(None)
+        # Calculate the length of the object if it is a "nail" or a "screw"
+        objects_length = []
+        if prediction in ["clavos", "tornillos"]:
+            self.logger.warning(f"Calculating length")
+            objects_length = (
+                self.calculate_length(image_open, orientation)
+            )
+        else:
+            objects_length = None
 
         self.logger.info(f"Predicting done")
             
         return (
             img_vec,
-            predictions, 
+            prediction, 
             objects_length,
             {
-                "Escala de grises": imgs_resized[0],	
+                "Escala de grises": img_resized,	
                 "Binarizacion": image_bw,
                 "Cierre": image_close,
                 "Apertura": image_open,
