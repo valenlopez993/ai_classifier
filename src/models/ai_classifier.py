@@ -16,11 +16,13 @@ class AIClassifier(ABC):
 
     def __init__(self):
         # Load images parameters
-        self.img_crop_size = 2000
+        self.img_crop_size = 2160
 
         # Preprocess parameters
-        self.kernel_size = 5
-        self.kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
+        self.kernel_close_size = 7
+        self.kernel_open_size = 7
+        self.kernel_close = np.ones((self.kernel_close_size, self.kernel_close_size), np.uint8)
+        self.kernel_open = np.ones((self.kernel_open_size, self.kernel_open_size), np.uint8)
 
         # Relation cm/px
         self.relation_cm_px = 8.8/4032
@@ -109,10 +111,9 @@ class AIClassifier(ABC):
         # Preprocess train images
 
         # Create an array to store the following properties of the images:
-        # - Area
         # - Eccentricity
         # - 7 Hu moments
-        img_vec = np.empty([1, 9])
+        img_vec = np.empty([1, 8])
         
         for img in images:
 
@@ -122,9 +123,9 @@ class AIClassifier(ABC):
             image_bw = image.astype(np.uint8) * 255
 
             # Closing
-            image_close = cv2.erode(cv2.dilate(image_bw, self.kernel, iterations=1), self.kernel, iterations=1)
+            image_close = cv2.erode(cv2.dilate(image_bw, self.kernel_close, iterations=1), self.kernel_close, iterations=1)
             # Opening
-            image_open = cv2.dilate(cv2.erode(image_close, self.kernel, iterations=1), self.kernel, iterations=1)
+            image_open = cv2.dilate(cv2.erode(image_close, self.kernel_open, iterations=1), self.kernel_open, iterations=1)
 
             # Labeling (identify objects)
             label_image = label(image_open)
@@ -141,11 +142,10 @@ class AIClassifier(ABC):
                     eccentricity = props.eccentricity 
                     moments_hu = props.moments_hu
 
-            # Remove the biggest object from the image
+            # Get just the biggest object from the image
             label_image[label_image != main_label] = 0
 
             new_row = np.array([
-                area, 
                 eccentricity, 
                 *moments_hu
             ])
