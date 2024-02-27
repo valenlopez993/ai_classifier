@@ -49,14 +49,17 @@ class KNNClassifier(AIClassifier):
         
         self.logger.info(f"Running algorithm")
         
+        # Calculate the distance of each image to the new datapoint
         distances = [
             self.euclidean_distance(img_vec, train_img)
             for train_img in self.train_images
         ]
 
+        # Get the k-nearest neighbors
         neighbors_index = np.argsort(distances)[:k]
         neighbors = self.train_labels[neighbors_index]
 
+        # Get the most common category of the k-nearest neighbors
         most_common = np.bincount(neighbors).argmax()
         prediction = self.categories[most_common]
 
