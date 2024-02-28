@@ -19,8 +19,8 @@ class AIClassifier(ABC):
         self.img_crop_size = 2160
 
         # Preprocess parameters
-        self.kernel_close_size = 7
-        self.kernel_open_size = 7
+        self.kernel_close_size = 15
+        self.kernel_open_size = 15
         self.kernel_close = np.ones((self.kernel_close_size, self.kernel_close_size), np.uint8)
         self.kernel_open = np.ones((self.kernel_open_size, self.kernel_open_size), np.uint8)
 

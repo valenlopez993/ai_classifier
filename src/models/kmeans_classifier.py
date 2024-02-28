@@ -18,7 +18,7 @@ class KMeansClassifier(AIClassifier):
         self.train_data, train_labels = self.load_images(list(self.elements.keys()))
 
         self.train_images, _, _, _, _, _ = self.img_to_vec(self.train_data)
-        self.train_labels = train_labels
+        self.train_labels = train_labels.copy()
         self.categories = list(self.elements.keys())
         self.logger.info(f"Dataset loaded")
 
@@ -28,7 +28,7 @@ class KMeansClassifier(AIClassifier):
     def identify_clusters_and_get_prediction(
         self, 
         centroids,
-        new_datapoint_closest_centroid,
+        closest_centroid,
         knn_k=6
     ):
         # KNN algorithm
@@ -49,15 +49,25 @@ class KMeansClassifier(AIClassifier):
 
         # Get the most common category of the k-nearest neighbors
         most_commons = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=neighbors)
-
+        
+        # Create an aux array to store the new order full of "inf"
+        self.kmeans_labels = np.copy(closest_centroid)
+        self.kmeans_labels[:] = self.k
         # Order the centroids by the same order of the categories
         final_centroids = []
         for category in self.categories:
-            final_centroids.append(centroids[most_commons == self.categories.index(category)][0])
+            # Get the index of the category in the "most_commons" array
+            centroid_category_index = np.argwhere(most_commons == self.categories.index(category))[0]
+            # Update the closest centroid with the new centroids's order
+            self.kmeans_labels[closest_centroid == centroid_category_index] = self.categories.index(category)
+            # Reorder the centroids
+            final_centroids.append(centroids[centroid_category_index][0])
+        # Convert the list to a NumPy array    
         final_centroids = np.vstack([final_centroids[0], final_centroids[1], final_centroids[2], final_centroids[3]])
 
         # Get the category of the closest centroid to the new datapoint
-        prediction = self.categories[most_commons[new_datapoint_closest_centroid]]
+        prediction = self.categories[self.kmeans_labels[0]]
+
         return final_centroids, prediction
 
     def predict(
@@ -111,7 +121,7 @@ class KMeansClassifier(AIClassifier):
         # get the closest centroid to the image to predict that is in the 0th position
         final_centroids, prediction = self.identify_clusters_and_get_prediction(
             centroids=centroids,
-            new_datapoint_closest_centroid=closest_centroids[0]
+            closest_centroid=closest_centroids
         )
         
         # Calculate the length of the object if it is a "nail" or a "screw"
@@ -149,10 +159,10 @@ class KMeansClassifier(AIClassifier):
         other_image_props = list(range(len(self.image_props_label)))
         other_image_props.remove(main_image_prop)
 
-        num_tuercas = self.elements["tuercas"]
-        num_tornillos = self.elements["tornillos"]
-        num_arandelas = self.elements["arandelas"]
-        num_clavos = self.elements["clavos"]
+        # num_tuercas = self.elements["tuercas"]
+        # num_tornillos = self.elements["tornillos"]
+        # num_arandelas = self.elements["arandelas"]
+        # num_clavos = self.elements["clavos"]
 
         fig = plt.figure(figsize=(8, 8))
         figs_np = {}
@@ -161,22 +171,21 @@ class KMeansClassifier(AIClassifier):
             x_label = self.image_props_label[main_image_prop]
             y_label = self.image_props_label[prop2]
 
-            tuercas_x = self.train_images[0:num_tuercas, main_image_prop]
-            tuercas_y = self.train_images[0:num_tuercas, prop2]
+            tuercas_x = self.train_images[self.kmeans_labels[1:] == self.categories.index("tuercas"), main_image_prop]
+            tuercas_y = self.train_images[self.kmeans_labels[1:] == self.categories.index("tuercas"), prop2]
 
-            tornillos_x = self.train_images[num_tuercas:num_tuercas+num_tornillos, main_image_prop]
-            tornillos_y = self.train_images[num_tuercas:num_tuercas+num_tornillos, prop2]
+            tornillos_x = self.train_images[self.kmeans_labels[1:] == self.categories.index("tornillos"), main_image_prop]
+            tornillos_y = self.train_images[self.kmeans_labels[1:] == self.categories.index("tornillos"), prop2]
 
-            arandelas_x = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, main_image_prop]
-            arandelas_y = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, prop2]
+            arandelas_x = self.train_images[self.kmeans_labels[1:] == self.categories.index("arandelas"), main_image_prop]
+            arandelas_y = self.train_images[self.kmeans_labels[1:] == self.categories.index("arandelas"), prop2]
 
-            clavos_x = self.train_images[num_tuercas+num_tornillos+num_arandelas:, main_image_prop]
-            clavos_y = self.train_images[num_tuercas+num_tornillos+num_arandelas:, prop2]
+            clavos_x = self.train_images[self.kmeans_labels[1:] == self.categories.index("clavos"), main_image_prop]
+            clavos_y = self.train_images[self.kmeans_labels[1:] == self.categories.index("clavos"), prop2]
 
             centroids_x = centroids[:, main_image_prop]
             centroids_y = centroids[:, prop2]
 
-            
             # Create the scatter plot for the dataset
             plt.scatter(tuercas_x, tuercas_y, c=self.plot_colors["Tuercas"], label="Tuercas")
             plt.scatter(centroids_x[0], centroids_y[0], c=self.plot_colors["Tuercas"], label="Centroide - Tuercas", marker="D", s=100, linewidths=4)
