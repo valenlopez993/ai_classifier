@@ -159,11 +159,6 @@ class KMeansClassifier(AIClassifier):
         other_image_props = list(range(len(self.image_props_label)))
         other_image_props.remove(main_image_prop)
 
-        # num_tuercas = self.elements["tuercas"]
-        # num_tornillos = self.elements["tornillos"]
-        # num_arandelas = self.elements["arandelas"]
-        # num_clavos = self.elements["clavos"]
-
         fig = plt.figure(figsize=(8, 8))
         figs_np = {}
         for prop2 in other_image_props:

@@ -30,7 +30,7 @@ class KNNClassifier(AIClassifier):
             raise Exception("train_labels must have 1 dimension")
 
         self.train_images, _, _, _, _, _ = self.img_to_vec(train_images)
-        self.train_labels = train_labels
+        self.train_labels = train_labels.copy()
         self.categories = clusters_tags
 
     def predict(
@@ -97,11 +97,6 @@ class KNNClassifier(AIClassifier):
         other_image_props = list(range(len(self.image_props_label)))
         other_image_props.remove(main_image_prop)
 
-        num_tuercas = self.elements["tuercas"]
-        num_tornillos = self.elements["tornillos"]
-        num_arandelas = self.elements["arandelas"]
-        num_clavos = self.elements["clavos"]
-
         fig = plt.figure(figsize=(8, 8))
         figs_np = {}
         for prop2 in other_image_props:
@@ -109,18 +104,17 @@ class KNNClassifier(AIClassifier):
             x_label = self.image_props_label[main_image_prop]
             y_label = self.image_props_label[prop2]
 
-            tuercas_x = self.train_images[0:num_tuercas, main_image_prop]
-            tuercas_y = self.train_images[0:num_tuercas, prop2]
+            tuercas_x = self.train_images[self.train_labels == self.categories.index("tuercas"), main_image_prop]
+            tuercas_y = self.train_images[self.train_labels == self.categories.index("tuercas"), prop2]
 
-            tornillos_x = self.train_images[num_tuercas:num_tuercas+num_tornillos, main_image_prop]
-            tornillos_y = self.train_images[num_tuercas:num_tuercas+num_tornillos, prop2]
+            tornillos_x = self.train_images[self.train_labels == self.categories.index("tornillos"), main_image_prop]
+            tornillos_y = self.train_images[self.train_labels == self.categories.index("tornillos"), prop2]
 
-            arandelas_x = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, main_image_prop]
-            arandelas_y = self.train_images[num_tuercas+num_tornillos:num_tuercas+num_tornillos+num_arandelas, prop2]
+            arandelas_x = self.train_images[self.train_labels == self.categories.index("arandelas"), main_image_prop]
+            arandelas_y = self.train_images[self.train_labels == self.categories.index("arandelas"), prop2]
 
-            clavos_x = self.train_images[num_tuercas+num_tornillos+num_arandelas:, main_image_prop]
-            clavos_y = self.train_images[num_tuercas+num_tornillos+num_arandelas:, prop2]
-
+            clavos_x = self.train_images[self.train_labels == self.categories.index("clavos"), main_image_prop]
+            clavos_y = self.train_images[self.train_labels == self.categories.index("clavos"), prop2]
             
             # Create the scatter plot for the dataset
             plt.scatter(tuercas_x, tuercas_y, c=self.plot_colors["Tuercas"], label="Tuercas")
